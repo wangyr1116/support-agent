@@ -1,0 +1,12 @@
+# 本地 Python 环境
+.venv/
+
+# Python 缓存与安装生成文件
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 本地环境变量文件
+.env
+.env.*
+!.env.example
