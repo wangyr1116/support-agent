@@ -32,8 +32,13 @@ if __name__ == "__main__":
             with patch(
                 "agent.execute_tool_call", wraps=agent.execute_tool_call
             ) as tracked_tool:
-                agent.main()
-
+                agent_result = agent.run_agent("查询T1001的进度，并检索相关FastAPI资料。")
+                print("Agent返回值：", agent_result)
+                assert agent_result == {
+                    "ok": False,
+                    "data": None,
+                    "error": "达到模型请求轮数上限，任务尚未完成",
+                }
                 print("模拟模型请求次数：", mock_post.call_count)
                 print("实际工具执行次数：", tracked_tool.call_count)
                 assert mock_post.call_count == 4  # 填空1 大模型调用最多4次

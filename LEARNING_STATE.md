@@ -14,7 +14,7 @@
 - tools.py：get_ticket查虚构工单；search_docs请求本地/search，统一ok/data/error返回。
 - dispatcher.py：注册表、参数结构检查；tool_calling.py：JSON参数解析；tool_specs.py：工具说明。
 - agent.py：requests调用DeepSeek，DEEPSEEK_API_KEY环境变量，deepseek-flash非思考模式。最多4轮模型请求，每轮输出上限1024；无工具调用则结束，第4轮仍有工具调用则不执行并报告未完成，截断和请求异常有出口。
-- 当前问题：先查T1001再依据标题检索。没有工具总次数上限、交互输入或生产级响应结构校验。
+- main()已支持终端输入单个问题并展示结果；run_agent(question)检查字符串及空白，执行流程并返回ok/data/error。成功data为回答字符串；已处理失败返回原因。仍打印过程日志，无工具总次数上限或完整响应结构校验。
 - .venv使用Python 3.13.9，pyproject.toml声明requests。曾因WindowsApps入口无输出，通过Anaconda Python创建环境解决。
 
 ## 验证与理解
@@ -28,12 +28,11 @@
 
 ## Git与当前下一步
 
-- 已有用户提交6a6b22b（工具与分发器）、7fcfd0a（忽略文件）。
-- 本轮确认agent.py、tool_specs.py、tool_calling.py、test_round_limit.py尚未跟踪。
-- 助手新增README.md、docs/validation.md并重整本文件，未改核心代码、未暂存或提交。
-- 待用户纠正test_round_limit.py中“工具调用次数最多3次”注释：仅本场景为3次，不是全局限制。随后检查差异并提交闭环代码与文档。
-- 本阶段不继续增加功能；提交后围绕现有代码做独立讲解或小修改验收，不默认发布GitHub或扩展框架。
-
+- 用户已提交54c014c，保存有轮数上限的Agent、协议解析与文档；此前提交6a6b22b、7fcfd0a。
+- 本批已完成终端输入、main/run_agent拆分、统一成功/失败返回；用户验证T1002真实查询、空格拒绝、更新后的上限失败字典及新增正常回答测试。最后两项为本地模拟，无付费模型请求。助手核对差异，未重复运行。
+- 用户能正确区分未知工具、参数名错误在dispatcher拒绝，参数值类型错误在tools拒绝；曾误认为纯空格会请求模型，已实际验证并纠正。
+- 本轮更新README、docs/validation与本文件，核心功能未改。待用户暂存agent.py、test_round_limit.py、test_agent_answer.py及三份文档，共6个文件并提交。
+- 不继续增加测试文件。提交后优先巩固run_agent返回值与工具结果的区别，再按需求决定下一模块；不默认发布GitHub。
 ## 前置项目
 
 - RAG第一阶段、GitHub发布、主页更新和置顶已完成，不重复检索诊断或上传。

@@ -5,12 +5,19 @@ from tool_specs import TOOL_SPECS
 from tool_calling import execute_tool_call
 
 
-def main():
+def run_agent(question):
+    if not isinstance(question, str):
+        return {"ok": False, "data": None, "error": "问题必须是字符串"}
+
+    question = question.strip()
+    if not question:
+        return {"ok": False, "data": None, "error": "问题不能为空"}
+
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
-        print("未找到 DEEPSEEK_API_KEY，请先设置环境变量")
-        return
+        return {"ok": False, "data": None, "error": "未找到DEEPSEEK_API_KEY"}
 
+    # 后面保留现有 payload 和循环
     payload = {
         "model": "deepseek-flash",
         "thinking": {"type": "disabled"},
@@ -34,8 +41,7 @@ def main():
            {
     "role": "user",
     "content": (
-        "请先查询T1001的进度，再根据查到的工单标题检索相关FastAPI资料，"
-        "简要说明资料中有哪些相关信息。"
+        question
     ),
 },
         ],
@@ -59,23 +65,27 @@ def main():
             choice = response.json()["choices"][0]
             message = choice["message"]
         except requests.exceptions.RequestException as exc:
-            print("模型请求失败：", type(exc).__name__)
-            return
+            return {
+                "ok": False,
+                "data": None,
+                "error": f"模型请求失败：{type(exc).__name__}",
+            }
 
         if choice.get("finish_reason") == "length":
-            print("模型输出达到长度上限，本次停止，未执行本轮工具")
-            return
+            return {"ok": False, "data": None, "error": "模型输出达到长度上限"}
 
         payload["messages"].append(message)
         tool_calls = message.get("tool_calls") or []
 
         if not tool_calls:
-            print("最终回答：", message.get("content") or "模型未返回有效回答")
-            return
+            answer = message.get("content")
+            if not isinstance(answer, str) or not answer.strip():
+                return {"ok": False, "data": None, "error": "模型未返回有效回答"}
+
+            return {"ok": True, "data": answer, "error": None}  # 填空1
 
         if round_no == max_rounds:
-            print("已达到模型请求轮数上限，本轮工具未执行，任务尚未完成")
-            return
+            return {"ok": False, "data": None, "error": "达到模型请求轮数上限，任务尚未完成"}
 
         for call in tool_calls:
             function_info = call["function"]
@@ -86,9 +96,18 @@ def main():
             print("工具结果：", result)
             payload["messages"].append({
                 "role": "tool",
-                "tool_call_id": call["id"],  # 填空2：这次调用的编号
+                "tool_call_id": call["id"],
                 "content": json.dumps(result, ensure_ascii=False),
             })
+
+def main():
+    question = input("请输入你的问题：")
+    agent_result = run_agent(question)
+    if agent_result["ok"]:
+        print("最终回答：", agent_result["data"])
+    else:
+        print("执行未完成：", agent_result["error"])
+
 
 if __name__ == "__main__":
     main()
