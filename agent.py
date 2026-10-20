@@ -50,6 +50,8 @@ def run_agent(question):
     }
 
     max_rounds = 4
+    max_tool_calls = 4
+    tool_calls_used = 0   
 
     for round_no in range(1, max_rounds + 1):
         print(f"\n模型请求第 {round_no} 轮")
@@ -86,8 +88,15 @@ def run_agent(question):
 
         if round_no == max_rounds:
             return {"ok": False, "data": None, "error": "达到模型请求轮数上限，任务尚未完成"}
-
         for call in tool_calls:
+            if tool_calls_used >= max_tool_calls:
+                return {
+                    "ok": False,
+                    "data": None,
+                    "error": "达到工具执行次数上限，任务尚未完成",
+                }
+
+            tool_calls_used += 1  
             function_info = call["function"]
             print("执行工具：", function_info["name"], function_info["arguments"])
             result = execute_tool_call(
