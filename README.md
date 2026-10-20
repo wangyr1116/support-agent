@@ -1,0 +1,102 @@
+# Support Agent
+
+只读技术支持 Agent 学习原型：DeepSeek选择工具，本地Python执行工具并回传结果；模型可以根据前一轮结果继续检索，再生成回答。所有工单均为虚构数据，不支持修改工单或查询处理记录。
+
+## 工具与流程
+
+| 工具 | 输入 | 数据来源 |
+| --- | --- | --- |
+| get_ticket | ticket_id，例如T1001 | tools.py中的虚构工单字典 |
+| search_docs | question、可选top_k（1–10，默认3） | 本地RAG的POST /search |
+
+工具统一返回包含ok、data、error的字典。查询失败也可回传模型，由模型说明失败原因。
+
+```text
+用户问题 + 工具说明 → DeepSeek
+    → 工具名称与JSON参数文本
+    → 参数解析 → 注册表分发 → 本地执行
+    → 带tool_call_id的结果消息 → DeepSeek继续决策或回答
+```
+
+当前问题：先查询T1001，再根据工单标题检索FastAPI资料。已观察到的路径为第1轮查工单、第2轮检索、第3轮回答。模型选择、检索结果与措辞可能变化。
+
+## 环境准备（Windows CMD）
+
+需要Python 3.13或以上，本机使用Python 3.13.9。首次在项目目录执行：
+
+```bat
+cd /d D:\llm-learning\support-agent
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install -e .
+```
+
+已有.venv时只需激活。若python被WindowsApps别名遮挡，使用实际Python可执行文件的完整路径创建环境；本机曾使用 `D:\ProgramData\anaconda3\python.exe -m venv .venv`。
+
+两个项目各用自己的环境；Agent不安装RAG的向量检索依赖。依赖范围见pyproject.toml，当前没有锁文件，不保证不同时间安装的依赖版本完全相同。
+
+## 启动RAG（窗口一）
+
+资料查询依赖独立项目 [rag-qa-system](https://github.com/wangyr1116/rag-qa-system)，不会自动启动。以下使用本机现有目录，其他机器请替换路径并先完成原项目的环境准备。
+
+```bat
+cd /d D:\llm-learning\rag-qa-system
+uv sync --locked
+set "RAG_DOCUMENT_DIR=knowledge\fastapi_expanded"
+set "RAG_CHUNKING=markdown_tokens"
+uv run uvicorn app.main:app --reload
+```
+
+等待Application startup complete并保持窗口运行。工具请求http://127.0.0.1:8000/search，只检索资料，不调用RAG生成接口。单独查工单无需启动RAG。
+
+## 运行Agent（窗口二）
+
+```bat
+cd /d D:\llm-learning\support-agent
+.venv\Scripts\activate
+set "DEEPSEEK_API_KEY=替换为自己的真实密钥"
+python agent.py
+```
+
+只在本地终端设置密钥，不提交到Git。代码读取环境变量，不自动加载.env；关闭CMD后需要重新设置。
+
+当前使用deepseek-flash非思考模式，运行会发送付费API请求。问题写在agent.py的payload["messages"]用户消息中，修改该消息即可切换场景；目前没有交互输入界面。
+
+## 终止规则
+
+- 最多4次模型请求，每次输出上限1024 tokens。
+- 无工具调用时显示回答并结束；空回答显示提示。
+- 第4轮仍要求调用工具时，不执行该轮工具，并报告任务尚未完成。
+- 输出因长度限制截断时停止，不执行该轮工具。
+- 捕获HTTP请求相关异常后打印异常类别并结束。
+
+请求轮数不等于工具次数：一轮可能包含多个工具。当前没有独立的工具总次数上限，也没有自动重试。
+
+## 本地验证
+
+```bat
+python test_round_limit.py
+```
+
+此脚本以模拟响应替换模型网络请求，并临时设置假密钥；仍执行真实的本地工单查询。无需真实密钥或RAG，不产生模型请求费用。
+
+预期模拟请求4次、工具执行3次，第4轮停止，末尾输出“轮数上限验证通过”。这里工具执行3次，是因为每轮模拟响应仅包含一个调用。
+
+其他学习入口：`python dispatcher.py`、`python tool_calling.py`、`python tool_specs.py`，当前演示不需要模型。`python tools.py`包含本地RAG请求，服务未启动时返回连接失败。
+
+## 文件职责
+
+| 文件 | 职责 |
+| --- | --- |
+| agent.py | 请求模型、管理消息、控制多轮流程与停止 |
+| tool_specs.py | 给模型阅读的工具说明 |
+| tool_calling.py | JSON参数文本解析 |
+| dispatcher.py | 注册表、参数结构检查、函数调用 |
+| tools.py | 虚构工单查询、本地资料检索 |
+| test_round_limit.py | 无付费请求的轮数上限验证 |
+
+## 验证与限制
+
+已验证场景见 [验证记录](docs/validation.md)。
+
+这是学习原型：未全面处理模型响应结构异常；引用支持仍由人工核对；检索资料不等于确认实际工单根因；提示词不能保证回答始终符合要求。尚未验证全新机器部署、并发或长期稳定运行。
