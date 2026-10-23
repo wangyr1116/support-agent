@@ -7,6 +7,7 @@
 | 工具 | 输入 | 数据来源 |
 | --- | --- | --- |
 | get_ticket | ticket_id，例如T1001 | tools.py中的虚构工单字典 |
+| list_tickets | status，例如待处理 | 同一虚构工单字典，返回匹配列表 |
 | search_docs | question、可选top_k（1–10，默认3） | 本地RAG的POST /search |
 
 工具统一返回包含ok、data、error的字典。查询失败也可回传模型，由模型说明失败原因。
@@ -116,3 +117,8 @@ agent_result = run_agent("查询T1002的进度")
 此调用需要环境变量密钥，通常会产生模型请求费用。正常完成返回 `{"ok": True, "data": "回答文字", "error": None}`；可处理的失败返回 `{"ok": False, "data": None, "error": "原因"}`。run_agent仍会打印轮数和工具过程日志，最终结果由调用者展示。
 
 Agent的ok表示流程产出了有效回答，不代表工单存在或回答事实已自动核验。工具的data是业务数据，Agent的data是回答字符串。未知响应结构等未处理异常仍可能抛出，不能保证所有异常都转换为失败字典。
+
+
+## 按状态查询工单
+
+输入：列出所有待处理的工单。已验证模型选择list_tickets并返回T1002，不需要RAG。status需为字符串，去除两端空白后不能为空。无匹配时返回ok=True、data=[]；数据来自虚构工单字典，不来自FastAPI资料。

@@ -25,10 +25,12 @@ def run_agent(question):
             {
     "role": "system",
     "content": (
-        "你是技术支持助手，目前只有两个只读工具："
-        "get_ticket查询虚构工单的编号、标题和状态；"
+        "你是技术支持助手，目前有三个只读工具："
+        "get_ticket按编号查询一张虚构工单；"
+        "list_tickets按状态筛选虚构工单列表；"
         "search_docs检索本地FastAPI资料。"
-        "查询工单必须使用get_ticket，解释FastAPI用法必须先使用search_docs。"
+        "查询指定编号的工单使用get_ticket，按状态列出工单使用list_tickets。"
+        "解释FastAPI用法必须先使用search_docs。"
         "如果检索问题依赖工单内容，先查询工单，拿到结果后再检索。"
         "资料不足时明确说明，不补写没有依据的处理步骤。"
         "工具返回失败时如实说明，不编造结果。"

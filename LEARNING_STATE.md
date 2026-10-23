@@ -1,6 +1,6 @@
 # 学习状态
 
-更新：2026-10-20。
+更新：2026-10-23。
 
 ## 目标与约定
 
@@ -11,7 +11,7 @@
 
 ## 当前实现
 
-- tools.py：get_ticket查虚构工单；search_docs请求本地/search，统一ok/data/error返回。
+- tools.py：get_ticket按编号查询、list_tickets按状态筛选虚构工单；search_docs请求本地/search，统一ok/data/error返回。
 - dispatcher.py：注册表、参数结构检查；tool_calling.py：JSON参数解析；tool_specs.py：工具说明。
 - agent.py：requests调用DeepSeek，DEEPSEEK_API_KEY环境变量，deepseek-flash非思考模式。最多4轮模型请求，每轮输出上限1024；无工具调用则结束，第4轮仍有工具调用则不执行并报告未完成，截断和请求异常有出口。
 - main()已支持终端输入单个问题并展示结果；run_agent(question)检查字符串及空白，执行流程并返回ok/data/error。成功data为回答字符串；已处理失败返回原因。仍打印过程日志；新增每次运行最多4次工具执行尝试，失败也计数。尚无完整响应结构校验。
@@ -28,10 +28,12 @@
 
 ## Git与当前下一步
 
-- 用户已提交d622ca6（终端输入、run_agent拆分、结构化返回），此前54c014c、6a6b22b、7fcfd0a。
-- 本批添加工具总次数上限，用户已贴两个模拟场景通过输出：请求4/工具3，及请求2/工具4。助手核对差异，未重跑或调用模型。
-- 待修正：test_round_limit.py第二场景在if __name__保护之外，用户需调整缩进，避免导入即执行。随后本地重跑两场景并提交agent.py、test_round_limit.py及三份文档，共5个文件。
-- README与验证记录已更新。核心代码和提交仍由用户完成，不新增测试文件或功能；不默认发布GitHub。
+- 用户已提交eb022d6（双重上限），称已完成测试缩进修正；导入检查没有助手重跑证据。此前d622ca6、54c014c等。
+- 暂缓可选tool_history，优先实习准备效率；用户完成list_tickets小任务。助手验收五种输入和分发调用通过，用户真实模型调用待处理列表通过。
+- 工具说明数据来源经助手指出后修正，提示词同步三个工具。用户能解释列表筛选与合法查询无匹配；空列表和None区别经助手补充，不认定所有迁移场景已独立掌握。
+- 本轮待提交agent.py、dispatcher.py、tool_specs.py、tools.py与README.md、docs/validation.md、LEARNING_STATE.md，共7个文件。助手更新文档与清理行末空白，不修改核心逻辑、不提交。
+- 提交后转向项目展示、简历事实和岗位准备；先了解教育背景、可到岗时间及地点等缺失信息，不默认发布GitHub或扩展框架。
+
 ## 前置项目
 
 - RAG第一阶段、GitHub发布、主页更新和置顶已完成，不重复检索诊断或上传。

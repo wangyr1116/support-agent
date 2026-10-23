@@ -29,6 +29,19 @@ def get_ticket(ticket_id):
         return {"ok": False, "data": None, "error": "工单不存在"}
 
     return {"ok": True, "data": ticket, "error": None}
+def list_tickets(status):
+    if not isinstance(status, str):
+        return {"ok": False, "data": None, "error": "工单状态必须是字符串"}
+
+    status = status.strip()
+
+    if not status:
+        return {"ok": False, "data": None, "error": "工单状态不能为空"}
+
+    tickets = [ticket for ticket in MOCK_TICKETS.values() if ticket["status"] == status]
+
+    return {"ok": True, "data": tickets, "error": None}
+
 
 def search_docs(question, top_k=3):
     if not isinstance(question, str):
@@ -46,11 +59,11 @@ def search_docs(question, top_k=3):
     try:
         response = requests.post(
             "http://127.0.0.1:8000/search",
-            json=payload,  
+            json=payload,
             timeout=30,
         )
         response.raise_for_status()
-        data = response.json() 
+        data = response.json()
     except requests.exceptions.Timeout:
         return {"ok": False, "data": None, "error": "资料检索请求超时"}
     except requests.exceptions.ConnectionError:
@@ -74,3 +87,8 @@ if __name__ == "__main__":
         top_k=2,
     )
     print(result)
+    print(list_tickets("处理中"))
+    print(list_tickets("待处理"))
+    print(list_tickets(" 已关闭"))
+    print(list_tickets("   "))
+    print(list_tickets(123))

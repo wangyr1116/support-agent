@@ -8,7 +8,7 @@ TOOL_SPECS = [#工具规格列表 / 工具描述清单
                 "type": "object",
                 "properties": {
                     "ticket_id": {
-                        "type": "string",  
+                        "type": "string",
                         "description": "工单编号，例如T1001。",
                     },
                 },
@@ -28,11 +28,26 @@ TOOL_SPECS = [#工具规格列表 / 工具描述清单
                     "question": {"type": "string", "description": "要检索的问题。"},
                     "top_k": {"type": "integer", "minimum": 1, "maximum": 10},
                 },
-                "required": ["question"], 
+                "required": ["question"],
                 "additionalProperties": False,
             },
         },
     },
+    {
+       "type": "function",
+                "function": {
+                    "name": "list_tickets",
+                    "description": "按状态筛选本地虚构工单，返回匹配工单列表。无匹配时返回空列表。只读，不修改工单。",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "status": {"type": "string", "description": "要筛选的工单状态。"},
+                        },
+                        "required": ["status"],
+                        "additionalProperties": False,
+                    },
+                },
+    }
 ]
 
 if __name__ == "__main__":
