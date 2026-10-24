@@ -3,6 +3,31 @@ import agent
 
 
 if __name__ == "__main__":
+    bad_cases = [
+        ({}, "模型响应缺少有效choices"),
+        ({"choices": []}, "模型响应缺少有效choices"),
+        ({"choices": [{}]}, "模型响应缺少有效message"),
+        ({"choices": ["hello", "world"]}, "模型候选必须是对象"),
+    ]
+
+    for body, expected_error in bad_cases:
+        response = Mock()
+        response.json.return_value = body
+
+        with patch.dict("os.environ", {"DEEPSEEK_API_KEY": "test-only"}):
+            with patch("agent.requests.post", return_value=response) as mock_post:
+                with patch("agent.execute_tool_call") as mock_tool:
+                    result = agent.run_agent("你好")
+
+                    assert result == {
+                        "ok": False,
+                        "data": None,
+                        "error": expected_error,
+                    }
+                    assert mock_post.call_count == 1
+                    mock_tool.assert_not_called()
+
+        print("异常响应验证通过：", expected_error)
     response = Mock()
     response.json.return_value = {
         "choices": [{

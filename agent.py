@@ -66,15 +66,30 @@ def run_agent(question):
                 timeout=60,
             )
             response.raise_for_status()
-            choice = response.json()["choices"][0]
-            message = choice["message"]
+            
+            body = response.json()
         except requests.exceptions.RequestException as exc:
             return {
                 "ok": False,
                 "data": None,
                 "error": f"模型请求失败：{type(exc).__name__}",
             }
+        if not isinstance(body, dict):
+            return {"ok": False, "data": None, "error": "模型响应必须是对象"}
 
+        choices = body.get("choices")
+        if not isinstance(choices, list) or not choices:
+            return {"ok": False, "data": None, "error": "模型响应缺少有效choices"}
+
+        choice = choices[0]  # 填空1：取第一个候选
+
+        if not isinstance(choice, dict):
+            return {"ok": False, "data": None, "error": "模型候选必须是对象"}
+
+        message = choice.get("message")  # 填空2：候选中的消息字段
+
+        if not isinstance(message, dict):
+            return {"ok": False, "data": None, "error": "模型响应缺少有效message"}
         if choice.get("finish_reason") == "length":
             return {"ok": False, "data": None, "error": "模型输出达到长度上限"}
 
