@@ -1,5 +1,29 @@
 # Support Agent
 
+## HTTP接口（本地开发）
+
+在项目虚拟环境安装依赖后，设置DEEPSEEK_API_KEY，再启动：
+
+```bat
+python -m pip install -e .
+python -m uvicorn api:app --host 127.0.0.1 --port 8001 --reload
+```
+
+浏览器访问 http://127.0.0.1:8001/docs ，向POST /ask提交 `{"question":"查询T1001的状态，只查工单，不需要检索资料。"}`。正常输入会调用付费模型；仅查工单无需启动RAG。资料查询仍依赖8000端口的RAG服务。
+
+接口复用run_agent，使用同步def路由，返回ok/data/error。缺少question由请求校验拒绝；空白字符串由Agent返回失败字典。已处理的Agent失败目前仍以HTTP 200返回，业务是否成功看ok；未处理异常可能产生HTTP 500。
+
+接口模拟测试：
+
+```bat
+python -m pip install httpx
+python test_api.py
+```
+
+测试替换api.run_agent，检查调用参数、次数及响应字典，无需启动服务或调用模型。当前环境使用httpx可通过，但Starlette发出弃用警告；其本地源码优先导入httpx2，并兼容回退httpx。尚未迁移或验证httpx2。本项目尚未锁定完整依赖版本。
+
+2026-10-26用户已验证/docs请求、空白输入、缺少字段及真实T1001回答；原有模拟测试用户报告通过。接口目前不返回工具执行记录，无自定义网页。
+
 只读技术支持 Agent 学习原型：DeepSeek选择工具，本地Python执行工具并回传结果；模型可以根据前一轮结果继续检索，再生成回答。所有工单均为虚构数据，不支持修改工单或查询处理记录。
 
 ## 工具与流程

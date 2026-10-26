@@ -5,4 +5,11 @@ description = "Learning project for a technical support agent"
 requires-python = ">=3.13"
 dependencies = [
     "requests>=2.32,<3",
+    "fastapi",
+    "pydantic>=2,<3",
+    "uvicorn",
+]
+[project.optional-dependencies]
+test = [
+    "httpx",
 ]
