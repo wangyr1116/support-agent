@@ -23,6 +23,7 @@ if __name__ == "__main__":
                         "ok": False,
                         "data": None,
                         "error": expected_error,
+                        "tool_calls": [],
                     }
                     assert mock_post.call_count == 1
                     mock_tool.assert_not_called()
@@ -50,6 +51,7 @@ if __name__ == "__main__":
                     "ok": True,
                     "data": "你好，我可以查询虚构工单和检索FastAPI资料。",
                     "error": None,
+                    "tool_calls": [],
                 }
                 assert mock_post.call_count == 1  # 填空：请求了几次？
                 mock_tool.assert_not_called()

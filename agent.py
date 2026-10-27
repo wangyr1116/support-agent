@@ -6,16 +6,17 @@ from tool_calling import execute_tool_call
 
 
 def run_agent(question):
+    tool_history = []
     if not isinstance(question, str):
-        return {"ok": False, "data": None, "error": "问题必须是字符串"}
+        return {"ok": False, "data": None, "error": "问题必须是字符串", "tool_calls": tool_history}
 
     question = question.strip()
     if not question:
-        return {"ok": False, "data": None, "error": "问题不能为空"}
+        return {"ok": False, "data": None, "error": "问题不能为空", "tool_calls": tool_history}
 
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
-        return {"ok": False, "data": None, "error": "未找到DEEPSEEK_API_KEY"}
+        return {"ok": False, "data": None, "error": "未找到DEEPSEEK_API_KEY", "tool_calls": tool_history}
 
     # 后面保留现有 payload 和循环
     payload = {
@@ -73,25 +74,26 @@ def run_agent(question):
                 "ok": False,
                 "data": None,
                 "error": f"模型请求失败：{type(exc).__name__}",
+                "tool_calls": tool_history
             }
         if not isinstance(body, dict):
-            return {"ok": False, "data": None, "error": "模型响应必须是对象"}
+            return {"ok": False, "data": None, "error": "模型响应必须是对象", "tool_calls": tool_history}
 
         choices = body.get("choices")
         if not isinstance(choices, list) or not choices:
-            return {"ok": False, "data": None, "error": "模型响应缺少有效choices"}
+            return {"ok": False, "data": None, "error": "模型响应缺少有效choices", "tool_calls": tool_history}
 
         choice = choices[0]  # 填空1：取第一个候选
 
         if not isinstance(choice, dict):
-            return {"ok": False, "data": None, "error": "模型候选必须是对象"}
+            return {"ok": False, "data": None, "error": "模型候选必须是对象", "tool_calls": tool_history}
 
         message = choice.get("message")  # 填空2：候选中的消息字段
 
         if not isinstance(message, dict):
-            return {"ok": False, "data": None, "error": "模型响应缺少有效message"}
+            return {"ok": False, "data": None, "error": "模型响应缺少有效message", "tool_calls": tool_history}
         if choice.get("finish_reason") == "length":
-            return {"ok": False, "data": None, "error": "模型输出达到长度上限"}
+            return {"ok": False, "data": None, "error": "模型输出达到长度上限", "tool_calls": tool_history}
 
         payload["messages"].append(message)
         tool_calls = message.get("tool_calls") or []
@@ -99,18 +101,19 @@ def run_agent(question):
         if not tool_calls:
             answer = message.get("content")
             if not isinstance(answer, str) or not answer.strip():
-                return {"ok": False, "data": None, "error": "模型未返回有效回答"}
+                return {"ok": False, "data": None, "error": "模型未返回有效回答", "tool_calls": tool_history}
 
-            return {"ok": True, "data": answer, "error": None}  # 填空1
+            return {"ok": True, "data": answer, "error": None, "tool_calls": tool_history}  # 填空1
 
         if round_no == max_rounds:
-            return {"ok": False, "data": None, "error": "达到模型请求轮数上限，任务尚未完成"}
+            return {"ok": False, "data": None, "error": "达到模型请求轮数上限，任务尚未完成", "tool_calls": tool_history}
         for call in tool_calls:
             if tool_calls_used >= max_tool_calls:
                 return {
                     "ok": False,
                     "data": None,
                     "error": "达到工具执行次数上限，任务尚未完成",
+                    "tool_calls": tool_history
                 }
 
             tool_calls_used += 1  
@@ -119,6 +122,12 @@ def run_agent(question):
             result = execute_tool_call(
                 function_info["name"], function_info["arguments"]
             )
+            tool_history.append({ 
+                "round": round_no,
+                "name": function_info["name"],
+                "arguments_json": function_info["arguments"],
+                "result": result,
+            })
             print("工具结果：", result)
             payload["messages"].append({
                 "role": "tool",

@@ -1,6 +1,25 @@
 from unittest.mock import Mock, patch
 import agent
+def expected_history(rounds):
+    records = []
 
+    for round_no in rounds:
+        records.append({
+            "round": round_no,
+            "name": "get_ticket",
+            "arguments_json": '{"ticket_id": "T1001"}',
+            "result": {
+                "ok": True,
+                "data": {
+                    "ticket_id": "T1001",
+                    "title": "FastAPI 接口返回 422",
+                    "status": "处理中",
+                },
+                "error": None,
+            },
+        })
+
+    return records#编造工具调用记录
 
 def make_response(number):
     response = Mock()
@@ -38,6 +57,7 @@ if __name__ == "__main__":
                     "ok": False,
                     "data": None,
                     "error": "达到模型请求轮数上限，任务尚未完成",
+                    "tool_calls": expected_history([1, 2, 3]),
                 }
                 print("模拟模型请求次数：", mock_post.call_count)
                 print("实际工具执行次数：", tracked_tool.call_count)
@@ -70,5 +90,6 @@ if __name__ == "__main__":
                     "ok": False,
                     "data": None,
                     "error": "达到工具执行次数上限，任务尚未完成",
+                    "tool_calls": expected_history([1,1,1,2]),
                 }
                 print("工具次数上限验证通过：请求2次，工具执行4次")
